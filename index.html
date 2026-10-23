@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#17191e">
+<title>Trade Journal</title>
+<style>
+:root{--bg:#17191e;--panel:#22252c;--panel2:#292d35;--text:#f1f3f5;--muted:#9299a5;--line:#343943;--accent:#d5e3f4;--green:#79cba0;--red:#e58d91}
+body.light{--bg:#f2f3f5;--panel:#fff;--panel2:#e9ebef;--text:#20232a;--muted:#707784;--line:#d9dce2;--accent:#343a44;--green:#168650;--red:#c83e4d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-bottom:86px}
+header{padding:24px 18px 12px;display:flex;justify-content:space-between;align-items:center}
+h1{font-size:25px;margin:0;font-weight:750;letter-spacing:-.7px}
+h2{font-size:19px;margin:0 0 15px}
+h3{font-size:15px;margin:0 0 10px}
+small,.muted{color:var(--muted)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.iconbtn{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:12px;padding:10px}
+main{padding:8px 16px;max-width:760px;margin:auto}
+.page{display:none}.page.active{display:block}
+.hello{color:var(--muted);margin:8px 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:19px;padding:17px;margin-bottom:13px}
+.eyebrow{font-size:12px;color:var(--muted);margin-bottom:8px}
+.balance{font-size:32px;font-weight:750;letter-spacing:-1px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.metric{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;min-width:0}
+.metric .value{font-size:21px;font-weight:700;margin-top:7px;overflow-wrap:anywhere}
+.green{color:var(--green)}.red{color:var(--red)}
+.primary{background:var(--text);color:var(--bg);border:0;border-radius:13px;padding:13px 16px;font-weight:700}
+.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.danger{color:var(--red)}
+input,select,textarea{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:11px;padding:12px;margin:6px 0 13px;outline:none}
+label{font-size:13px;color:var(--muted)}
+textarea{min-height:75px;resize:vertical}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.nav{position:fixed;z-index:5;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--panel);border-top:1px solid var(--line);padding:8px 5px max(8px,env(safe-area-inset-bottom))}
+.nav button{background:transparent;border:0;color:var(--muted);font-size:11px;padding:5px 1px;display:flex;align-items:center;flex-direction:column;gap:4px}
+.nav button.active{color:var(--text);font-weight:750}
+.nav .ico{font-size:21px;line-height:24px}
+.trade{padding:13px 0;border-bottom:1px solid var(--line)}
+.trade:last-child{border-bottom:0}
+.trade-title{font-weight:700}.trade-meta{font-size:12px;color:var(--muted);margin-top:5px}
+.trade-actions{display:flex;gap:6px;margin-top:9px}
+.trade-actions button{font-size:12px;padding:7px 9px}
+.empty{text-align:center;color:var(--muted);padding:24px 5px}
+canvas{width:100%;height:170px;display:block}
+.barrow{display:flex;align-items:center;gap:10px;margin:12px 0;font-size:13px}
+.bar{height:8px;border-radius:9px;background:var(--panel2);flex:1;overflow:hidden}
+.bar span{height:100%;display:block;border-radius:9px;background:var(--green)}
+hr{border:0;border-top:1px solid var(--line);margin:15px 0}
+</style>
+</head>
+<body>
+<header><div><h1>Trade Journal</h1><div class="muted" style="font-size:12px;margin-top:4px">Сначала процесс, потом результат</div></div><button class="iconbtn" onclick="toggleTheme()" aria-label="Сменить тему">◐</button></header>
+<main>
+<section class="page active" id="home">
+<div class="hello">Добрый день! 👋</div>
+<div class="card">
+<div class="eyebrow">Текущий баланс</div>
+<div class="balance" id="balance">$5,000.00</div>
+<div class="row" style="margin-top:12px"><span class="muted">Результат за всё время</span><strong id="totalPnl">$0.00</strong></div>
+</div>
+<div class="grid">
+<div class="metric"><div class="eyebrow">Сделок</div><div class="value" id="count">0</div></div>
+<div class="metric"><div class="eyebrow">Винрейт</div><div class="value" id="winrate">0%</div></div>
+<div class="metric"><div class="eyebrow">Прибыльных</div><div class="value green" id="wins">0</div></div>
+<div class="metric"><div class="eyebrow">Убыточных</div><div class="value red" id="losses">0</div></div>
+</div>
+<div class="card" style="margin-top:13px"><div class="row"><h2>Кривая капитала</h2><span class="muted" style="font-size:12px">По сделкам</span></div><canvas id="curve" width="650" height="220"></canvas></div>
+<div class="card"><div class="row"><h2>Последние сделки</h2><button class="secondary" onclick="showPage('trades')">Все сделки</button></div><div id="recent"></div></div>
+<button class="primary" style="width:100%;margin:2px 0 18px" onclick="newTrade()">＋ Новая сделка</button>
+</section>
+
+<section class="page" id="trades">
+<div class="row" style="margin:12px 0 17px"><h2>Сделки</h2><button class="primary" onclick="newTrade()">＋ Добавить</button></div>
+<div class="card"><div class="row"><span class="muted">История сделок</span><select id="filter" style="width:auto;margin:0;padding:8px" onchange="renderTrades()"><option value="all">Все</option><option value="win">Прибыльные</option><option value="loss">Убыточные</option></select></div><div id="tradeList"></div></div>
+</section>
+
+<section class="page" id="stats">
+<h2 style="margin:12px 0 16px">Статистика</h2>
+<div class="grid">
+<div class="metric"><div class="eyebrow">Средний результат</div><div class="value" id="avgR">0 R</div></div>
+<div class="metric"><div class="eyebrow">Общий результат</div><div class="value" id="statsPnl">$0</div></div>
+<div class="metric"><div class="eyebrow">Лучшая сделка</div><div class="value green" id="best">—</div></div>
+<div class="metric"><div class="eyebrow">Худшая сделка</div><div class="value red" id="worst">—</div></div>
+</div>
+<div class="card" style="margin-top:13px"><h2>По инструментам</h2><div id="assets"></div></div>
+<div class="card"><h2>По торговым сессиям</h2><div id="sessions"></div></div>
+<div class="card"><h2>По дням недели</h2><div id="weekdays"></div></div>
+</section>
+
+<section class="page" id="data">
+<h2 style="margin:12px 0 16px">Данные и настройки</h2>
+<div class="card"><h2>Счёт</h2><label>Название счёта</label><input id="accountName" placeholder="Например, основной счёт"><label>Начальный баланс ($)</label><input id="startBalance" type="number" min="0" step="0.01" value="5000"><label>Риск на сделку (%)</label><input id="risk" type="number" min="0.01" max="100" step="0.1" value="1"><button class="primary" style="width:100%" onclick="saveSettings()">Сохранить настройки</button></div>
+<div class="card"><h2>Внешний вид</h2><div class="row"><span>Тёмная тема</span><button class="secondary" id="themeBtn" onclick="toggleTheme()">Переключить тему</button></div><p class="muted" style="font-size:12px">Выбор темы сохраняется на этом устройстве.</p></div>
+<div class="card"><h2>Резервная копия</h2><p class="muted" style="font-size:13px">Сохрани копию сделок, чтобы перенести данные на другое устройство.</p><button class="secondary" style="width:100%;margin-bottom:10px" onclick="exportJSON()">Экспортировать данные (JSON)</button><label>Восстановить из JSON</label><input type="file" id="importFile" accept=".json,application/json" onchange="importJSON(event)"><button class="secondary" style="width:100%;margin-top:5px" onclick="exportCSV()">Экспортировать сделки (CSV)</button></div>
+<div class="card"><h2>Все данные</h2><button class="secondary danger" style="width:100%" onclick="clearTrades()">Удалить все сделки</button></div>
+</section>
+
+<section class="page" id="editor">
+<div class="row" style="margin:12px 0 17px"><h2 id="editorTitle">Новая сделка</h2><button class="secondary" onclick="showPage('trades')">Назад</button></div>
+<form class="card" id="tradeForm" onsubmit="saveTrade(event)">
+<input id="editId" type="hidden">
+<div class="formgrid">
+<div><label>Инструмент</label><select id="instrument"><option>EURGBP</option><option>XAUUSD</option><option>EURUSD</option><option>GBPUSD</option><option>USDJPY</option><option>Другое</option></select></div>
+<div><label>Направление</label><select id="direction"><option>Buy</option><option>Sell</option></select></div>
+<div><label>Дата</label><input id="date" type="date" required></div>
+<div><label>Время</label><input id="time" type="time" required></div>
+<div><label>Этап пропа</label><select id="phase"><option>Фаза 1</option><option>Фаза 2</option><option>Funded</option><option>Личный счёт</option></select></div>
+<div><label>Сессия</label><select id="session"><option>Лондон</option><option>Нью-Йорк</option><option>Вне сессии</option></select></div>
+<div><label>Результат (R)</label><input id="resultR" type="number" step="0.1" placeholder="Например: 2 или -1" required></div>
+<div><label>Плановый R:R</label><input id="rr" type="text" placeholder="1:2"></div>
+</div>
+<label>Заметка</label><textarea id="note" placeholder="Почему вошёл? Что можно улучшить?"></textarea>
+<label>Ссылка на TradingView (необязательно)</label><input id="tvLink" type="url" placeholder="https://www.tradingview.com/...">
+<button class="primary" style="width:100%;margin-top:5px" type="submit">Сохранить сделку</button>
+</form>
+</section>
+</main>
+
+<nav class="nav">
+<button class="active" data-page="home" onclick="showPage('home')"><span class="ico">⌂</span>Главная</button>
+<button data-page="trades" onclick="showPage('trades')"><span class="ico">⇄</span>Сделки</button>
+<button data-page="stats" onclick="showPage('stats')"><span class="ico">▥</span>Статистика</button>
+<button data-page="data" onclick="showPage('data')"><span class="ico">⚙</span>Данные</button>
+</nav>
+
+<script>
+const KEY='tradeJournal_v1';
+let state={trades:[],settings:{startBalance:5000,risk:1,accountName:'Основной счёт'},theme:'dark'};
+try{const saved=localStorage.getItem(KEY);if(saved)state={...state,...JSON.parse(saved)}}catch(e){}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){alert('Не удалось сохранить данные в этом браузере. Сделай резервную копию.')}} 
+function money(n){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n||0)}
+function pnl(t){return Number(t.r||0)*Number(state.settings.startBalance||5000)*Number(state.settings.risk||1)/100}
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));if(id==='editor')return;render();window.scrollTo(0,0)}
+function toggleTheme(){state.theme=state.theme==='dark'?'light':'dark';document.body.classList.toggle('light',state.theme==='light');persist();drawCurve()}
+function newTrade(){document.getElementById('tradeForm').reset();document.getElementById('editId').value='';document.getElementById('editorTitle').textContent='Новая сделка';let d=new Date();document.getElementById('date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');document.getElementById('time').value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');showPage('editor')}
+function saveTrade(e){e.preventDefault();const id=document.getElementById('editId').value;const t={id:id||String(Date.now()),instrument:instrument.value,direction:direction.value,date:date.value,time:time.value,phase:phase.value,session:session.value,r:Number(resultR.value),rr:rr.value,note:note.value,tvLink:tvLink.value};if(id)state.trades=state.trades.map(x=>x.id===id?t:x);else state.trades.push(t);state.trades.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));persist();showPage('trades')}
+function editTrade(id){const t=state.trades.find(x=>x.id===id);if(!t)return;newTrade();editId.value=t.id;editorTitle.textContent='Редактировать сделку';instrument.value=t.instrument;direction.value=t.direction;date.value=t.date;time.value=t.time;phase.value=t.phase;session.value=t.session;resultR.value=t.r;rr.value=t.rr||'';note.value=t.note||'';tvLink.value=t.tvLink||'';showPage('editor')}
+function deleteTrade(id){if(confirm('Удалить эту сделку?')){state.trades=state.trades.filter(t=>t.id!==id);persist();render()}}
+function renderTrades(){const filter=document.getElementById('filter')?.value||'all';let ts=[...state.trades].reverse().filter(t=>filter==='all'||(filter==='win'?t.r>0:t.r<0));tradeList.innerHTML=ts.length?ts.map(t=>tradeHTML(t,true)).join(''):'<div class="empty">Пока нет сделок. Нажми «Добавить».</div>'}
+function tradeHTML(t,actions){let p=pnl(t);return '<div class="trade"><div class="row"><div><div class="trade-title">'+esc(t.instrument)+' · '+esc(t.direction)+'</div><div class="trade-meta">'+esc(t.date)+' '+esc(t.time)+' · '+esc(t.phase)+' · '+esc(t.session)+'</div></div><div style="text-align:right"><strong class="'+(p>=0?'green':'red')+'">'+(p>0?'+':'')+money(p)+'</strong><div class="trade-meta">'+(t.r>0?'+':'')+t.r+' R</div></div></div>'+(t.note?'<div class="trade-meta">'+esc(t.note)+'</div>':'')+(t.tvLink?'<div class="trade-meta"><a style="color:var(--text)" href="'+esc(t.tvLink)+'" target="_blank" rel="noopener">Открыть TradingView</a></div>':'')+(actions?'<div class="trade-actions"><button class="secondary" onclick="editTrade(\''+t.id+'\')">Изменить</button><button class="secondary danger" onclick="deleteTrade(\''+t.id+'\')">Удалить</button></div>':'')+'</div>'}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){let ts=state.trades,total=ts.reduce((s,t)=>s+pnl(t),0),wins=ts.filter(t=>t.r>0),losses=ts.filter(t=>t.r<0),balance=Number(state.settings.startBalance||5000)+total;document.getElementById('balance').textContent=money(balance);document.getElementById('totalPnl').textContent=(total>0?'+':'')+money(total);totalPnl.className=total>=0?'green':'red';count.textContent=ts.length;winrate.textContent=(ts.length?wins.length/ts.length*100:0).toFixed(1)+'%';document.getElementById('wins').textContent=wins.length;document.getElementById('losses').textContent=losses.length;document.getElementById('statsPnl').textContent=money(total);document.getElementById('avgR').textContent=(ts.length?ts.reduce((s,t)=>s+t.r,0)/ts.length:0).toFixed(2)+' R';best.textContent=ts.length?Math.max(...ts.map(t=>t.r)).toFixed(1)+' R':'—';worst.textContent=ts.length?Math.min(...ts.map(t=>t.r)).toFixed(1)+' R':'—';recent.innerHTML=ts.length?[...ts].reverse().slice(0,4).map(t=>tradeHTML(t,false)).join(''):'<div class="empty">Твои сделки появятся здесь.</div>';renderTrades();renderGroups('assets',groupBy(ts,t=>t.instrument));renderGroups('sessions',groupBy(ts,t=>t.session));renderGroups('weekdays',groupBy(ts,t=>['Вс','Пн','Вт','Ср','Чт','Пт','Сб'][new Date(t.date+'T12:00:00').getDay()]));drawCurve();accountName.value=state.settings.accountName||'';startBalance.value=state.settings.startBalance;risk.value=state.settings.risk;document.body.classList.toggle('light',state.theme==='light')}
+function groupBy(ts,key){let o={};ts.forEach(t=>{let k=key(t);o[k]=(o[k]||0)+pnl(t)});return o}
+function renderGroups(id,o){let entries=Object.entries(o).sort((a,b)=>b[1]-a[1]);document.getElementById(id).innerHTML=entries.length?entries.map(([k,v])=>'<div class="barrow"><span style="min-width:95px">'+esc(k)+'</span><div class="bar"><span style="width:'+Math.min(100,Math.abs(v)/(Math.max(1,...entries.map(x=>Math.abs(x[1]))))*100)+'%;background:'+(v<0?'var(--red)':'var(--green)')+'"></span></div><strong class="'+(v<0?'red':'green')+'">'+money(v)+'</strong></div>').join(''):'<div class="empty">Недостаточно данных.</div>'}
+function drawCurve(){let c=document.getElementById('curve');if(!c)return;let ctx=c.getContext('2d'),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);let ts=[...state.trades].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));let vals=[Number(state.settings.startBalance||5000)];ts.forEach(t=>vals.push(vals[vals.length-1]+pnl(t)));let min=Math.min(...vals),max=Math.max(...vals);if(max===min){max+=1;min-=1}let pad=18;ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--line');ctx.lineWidth=1;for(let i=0;i<4;i++){let y=pad+i*(h-2*pad)/3;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-pad,y);ctx.stroke()}ctx.beginPath();vals.forEach((v,i)=>{let x=pad+i*(w-2*pad)/Math.max(1,vals.length-1),y=h-pad-(v-min)/(max-min)*(h-2*pad);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--green');ctx.lineWidth=3;ctx.stroke()}
+function saveSettings(){let b=Number(startBalance.value),r=Number(risk.value);if(!(b>0)||!(r>0&&r<=100)){alert('Проверь начальный баланс и риск.');return}state.settings={startBalance:b,risk:r,accountName:accountName.value||'Основной счёт'};persist();render();alert('Настройки сохранены')}
+function exportJSON(){download('trade-journal-backup.json',JSON.stringify(state,null,2),'application/json')}
+function exportCSV(){let rows=[['Дата','Время','Инструмент','Направление','Этап','Сессия','R','Прибыль USD','R:R','Заметка','TradingView'],...state.trades.map(t=>[t.date,t.time,t.instrument,t.direction,t.phase,t.session,t.r,pnl(t),t.rr,t.note,t.tvLink])];download('trade-journal.csv','\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n'),'text/csv')}
+function download(name,content,type){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([content],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+function importJSON(e){let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=()=>{try{let d=JSON.parse(reader.result);if(!Array.isArray(d.trades)||!d.settings)throw Error();if(confirm('Заменить текущие данные импортированной копией?')){state=d;persist();render();alert('Данные восстановлены')}}catch(err){alert('Не удалось прочитать файл резервной копии')}};reader.readAsText(f);e.target.value=''}
+function clearTrades(){if(confirm('Удалить ВСЕ сделки? Сначала экспортируй резервную копию.')){state.trades=[];persist();render()}}
+render();
+</script>
+</body>
+</html>
